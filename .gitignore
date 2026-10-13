@@ -6,6 +6,10 @@ program/roster.txt
 program/.live-state.json
 program/.live-state.json.*
 program/skipped.ndjson
+program/.canopy.pid
+
+# Claude Code personal settings (may hold permission rules)
+.claude/settings.local.json
 
 # backups / scratch
 *.bak
