@@ -39,8 +39,14 @@ meeting notes somewhere with action items.
 Wispr Flow writes a live transcript on this machine and it grows during a call:
 
 ```
-~/Library/Application Support/Wispr Flow/meetings/<id>/live.ndjson
+macOS    ~/Library/Application Support/Wispr Flow/meetings/<id>/live.ndjson   (confirmed)
+Windows  %APPDATA%\Wispr Flow\meetings\<id>\live.ndjson                        (unconfirmed)
 ```
+
+The folder is auto-detected per OS, or set `CANOPY_WISPR_DIR` to override. The loop itself is
+`canopy_run.py` (pure Python, runs on macOS, Windows and Linux); `run.sh`/`tick.sh` are the
+macOS bash equivalents. On Windows the local live file is not yet confirmed to exist; see the
+README and the skill's Windows pre-flight.
 
 `ear-wispr.py` reads it (read only, never writes inside the Wispr folder) and emits one line
 per utterance in a fixed format: `[HH:MM:SS.mmm] Name: text`. It also writes `roster.txt`,

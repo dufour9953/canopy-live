@@ -22,13 +22,17 @@ on the survivors on a tick. **You never read the raw transcript. The program alr
 ## THE FOUR LINES
 
 ```
-1  THE EAR      ~/Library/Application Support/Wispr Flow/meetings/<newest>/live.ndjson
-                newest folder by mtime. It GROWS during a live call.
+1  THE EAR      macOS:   ~/Library/Application Support/Wispr Flow/meetings/<newest>/live.ndjson
+                Windows: %APPDATA%\Wispr Flow\meetings\<newest>\live.ndjson  (UNCONFIRMED, see S0)
+                newest folder by mtime. On macOS it GROWS during a live call.
                 No connector, no token, no network. Local only.
+                Override the folder with the CANOPY_WISPR_DIR environment variable.
 
 2  THE PROGRAM  {{CANOPY_HOME}}/program/
-                run.sh       the loop. ear -> feed.log -> jev-compile.py --live, every 5s.
-                tick.sh      your tick. Prints the PULSE and only NEW bin rows.
+                canopy_run.py   the loop (cross-platform). ear -> feed.log ->
+                                jev-compile.py --live, every 5s. (macOS also has run.sh.)
+                canopy_tick.py  your tick (cross-platform). PULSE + only NEW bin rows.
+                                (macOS also has tick.sh.)
                 jev-compile.py  the classifier. Zero tokens.
                 ear-wispr.py    reads Wispr, writes feed.log + roster.txt.
 
@@ -42,18 +46,39 @@ on the survivors on a tick. **You never read the raw transcript. The program alr
 
 ## START · what you do when the operator starts canopy
 
-Do these in order. Do not improvise.
+Do these in order. Do not improvise. **S0 comes before everything.**
+
+### Commands by platform
+
+Pick the operator's row and use it wherever S2 and S5 say "the loop" / "the tick".
 
 ```
-S1  ASK ONCE   "Is Wispr recording, and are you on headphones?" Wait for yes.
-               Without headphones the mic hears the speakers and every voice
-               lands as the mic holder.
+            the loop                                      the tick
+macOS       python3 {{CANOPY_HOME}}/program/canopy_run.py   python3 {{CANOPY_HOME}}/program/canopy_tick.py 10
+            (or {{CANOPY_HOME}}/program/run.sh)              (or {{CANOPY_HOME}}/program/tick.sh 10)
+Windows     python {{CANOPY_HOME}}\program\canopy_run.py    python {{CANOPY_HOME}}\program\canopy_tick.py 10
+            (if `python` opens the Store or fails, use `py`)
+```
 
-S2  LOOP       Run in the background, long timeout:
-                 {{CANOPY_HOME}}/program/run.sh
+```
+S0  PLATFORM   FIRST, before anything else: ask "Are you on Mac or Windows?" Wait for the
+               answer. It picks the command row above and the pathway below.
+               Mac     -> go straight to S1.
+               Windows -> do the WINDOWS PRE-FLIGHT (just below this block) FIRST, then S1.
+                          The Windows live transcript file is UNCONFIRMED. The pre-flight is
+                          not optional; do not skip it or assume the Mac file exists.
+
+S1  ASK ONCE   Mac:     "Is Wispr recording, and are you on headphones?" Wait for yes.
+               Windows: "Is Wispr recording, and is the call audio on your default output
+                        device?" Wait for yes.
+               Without headphones (Mac) the mic hears the speakers and every voice lands as
+               the mic holder. On Windows, Wispr captures other participants only from the
+               default output device.
+
+S2  LOOP       Run the loop command (platform table above), in the background, long timeout.
                Read its output once. Say "The ear is on Wispr. It last heard you Ns ago."
                BLIND ("no Wispr live.ndjson found") -> STOP, say so.
-               OLD (a file exists but is stale): do NOT stop the loop. run.sh auto-latches
+               OLD (a file exists but is stale): do NOT stop the loop. The loop auto-latches
                to the freshest meeting and re-latches to a newer one on its own. Say ONE
                line: "open a fresh Wispr meeting and I'll latch on the moment it opens."
                Stay live. Never report "old" more than once.
@@ -68,11 +93,10 @@ S4  CHECK      ONE turn, in this order: arm the S5 tick FIRST, then ask the oper
                "Your words came through." Spoke and no row within ~two ticks -> BLIND. Stop.
 
 S5  TICK       Armed at S4, before the sentence ask. Never arm a second one.
-               Run on an interval (a watcher/monitor, long timeout):
-                 {{CANOPY_HOME}}/program/tick.sh 10
-               The argument is seconds. 10 is the floor (the loop writes bins every 5s);
-               use 120 for a long call. Every tick gives you a PULSE line and any new rows.
-               Run THE SEQUENCE below on the NEW rows only. Re-arm when it expires.
+               Run the tick command (platform table above) on an interval (a watcher/monitor,
+               long timeout). The trailing number is seconds: 10 is the floor (the loop writes
+               bins every 5s); use 120 for a long call. Every tick gives you a PULSE line and
+               any new rows. Run THE SEQUENCE below on the NEW rows only. Re-arm when it expires.
 
 S6  SAY        "listening." ONCE. After that, show the PULSE line on every tick. Run THE
                SEQUENCE and surface catches only when a tick brings a new row or a change.
@@ -83,8 +107,29 @@ S7  STOP       a tick says STOPPED, or the operator says stop: stop the tick and
                the bin paths on one last line.
 ```
 
-**The operator can also run it alone in a terminal, no agent:** run `{{CANOPY_HOME}}/program/run.sh`.
-Ctrl-C stops it. That gives the bins, not the reflection.
+### WINDOWS PRE-FLIGHT · do this before S1 on Windows
+
+canopy-live depends on Wispr writing a growing `live.ndjson` on the machine. On macOS this is
+confirmed. On Windows it is NOT: Wispr's Windows docs describe cloud-stored transcripts and do
+not document a local live file. Confirm it exists before trusting anything.
+
+```
+1  Start a Wispr meeting.
+2  Find the live file. In PowerShell:
+     Get-ChildItem $env:APPDATA\'Wispr Flow' -Recurse -File |
+       Sort-Object LastWriteTime -Descending |
+       Select-Object -First 10 FullName,Length,LastWriteTime
+   Run it twice, ~10s apart. Watch for a file whose Length GROWS while you talk.
+3  GROWING live.ndjson found -> set CANOPY_WISPR_DIR to the folder that holds the meeting
+   subfolders (its parent), then go to S1.
+4  NO growing local file -> STOP and tell the operator plainly: canopy-live's local,
+   zero-token premise does not hold on their Windows Wispr build yet. Do NOT fake it. The
+   only fallback is pulling transcripts from Wispr's cloud via a connector, which costs
+   tokens and is a different design.
+```
+
+**The operator can also run it alone in a terminal, no agent:** run the loop command for their
+platform (the table above). Ctrl-C stops it. That gives the bins, not the reflection.
 
 ### THE START RITUAL, mapped
 

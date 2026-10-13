@@ -8,8 +8,9 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 EARPY="$HERE/ear-wispr.py"
 cd "$HERE" || exit 1
+WISPR_DIR="${CANOPY_WISPR_DIR:-$HOME/Library/Application Support/Wispr Flow/meetings}"
 
-EAR=$(ls -t "$HOME/Library/Application Support/Wispr Flow/meetings/"*/live.ndjson 2>/dev/null | head -1)
+EAR=$(ls -t "$WISPR_DIR/"*/live.ndjson 2>/dev/null | head -1)
 if [ -z "$EAR" ]; then echo "BLIND: no Wispr live.ndjson found. Start a Wispr recording first."; exit 1; fi
 AGE=$(( $(date +%s) - $(stat -f %m "$EAR") ))
 echo "ear: $EAR"
@@ -20,7 +21,7 @@ tick=0
 while true; do
   # self-heal: a new Wispr meeting started mid-run?
   # re-latch to it when the current ear has gone stale AND a newer file is live.
-  NEWEAR=$(ls -t "$HOME/Library/Application Support/Wispr Flow/meetings/"*/live.ndjson 2>/dev/null | head -1)
+  NEWEAR=$(ls -t "$WISPR_DIR/"*/live.ndjson 2>/dev/null | head -1)
   if [ -n "$NEWEAR" ] && [ "$NEWEAR" != "$EAR" ]; then
     EARAGE=$(( $(date +%s) - $(stat -f %m "$EAR") ))
     NEWAGE=$(( $(date +%s) - $(stat -f %m "$NEWEAR") ))

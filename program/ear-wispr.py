@@ -10,14 +10,35 @@ Speaker rule (lookup, never inference):
   source == "system"  -> everyone else. Named by Wispr's own name field, or left blank.
 A blank name stays UNATTRIBUTED downstream. Never guess a name from context.
 """
-import json, os, sys, glob, datetime
+import json, os, sys, glob, platform, datetime
 
-WISPR = os.path.expanduser("~/Library/Application Support/Wispr Flow/meetings")
+try:
+    sys.stdout.reconfigure(encoding="utf-8")   # Windows console defaults can break output
+except Exception:
+    pass
+
 MIC_NAME = os.environ.get("CANOPY_MIC_NAME", "Me")   # the mic holder's name in the feed
 
 
+def wispr_dir():
+    """Where Wispr Flow writes meeting transcripts. CANOPY_WISPR_DIR overrides; else per-OS."""
+    env = os.environ.get("CANOPY_WISPR_DIR")
+    if env:
+        return os.path.expanduser(env)
+    sysname = platform.system()
+    if sysname == "Windows":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "Wispr Flow", "meetings")
+    if sysname == "Darwin":
+        return os.path.expanduser("~/Library/Application Support/Wispr Flow/meetings")
+    return os.path.expanduser("~/.config/Wispr Flow/meetings")
+
+
+WISPR = wispr_dir()
+
+
 def newest(d=None):
-    f = glob.glob(os.path.join(d or WISPR, "*", "live.ndjson"))
+    f = glob.glob(os.path.join(d or wispr_dir(), "*", "live.ndjson"))
     return max(f, key=os.path.getmtime) if f else None
 
 

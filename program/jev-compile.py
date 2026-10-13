@@ -22,7 +22,27 @@
 #   python3 jev-compile.py --from-log feed.log --last 100
 #   python3 jev-compile.py --selftest
 
-import os, sys, re, json, time, glob, argparse, urllib.request, urllib.parse, urllib.error, datetime
+import os, sys, re, json, time, glob, platform, argparse, urllib.request, urllib.parse, urllib.error, datetime
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")   # Windows console defaults can break output
+except Exception:
+    pass
+
+
+def wispr_dir():
+    """Where Wispr Flow writes meeting transcripts. CANOPY_WISPR_DIR overrides; else per-OS."""
+    env = os.environ.get("CANOPY_WISPR_DIR")
+    if env:
+        return os.path.expanduser(env)
+    sysname = platform.system()
+    if sysname == "Windows":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "Wispr Flow", "meetings")
+    if sysname == "Darwin":
+        return os.path.expanduser("~/Library/Application Support/Wispr Flow/meetings")
+    return os.path.expanduser("~/.config/Wispr Flow/meetings")
+
 
 MIC_NAME = os.environ.get("CANOPY_MIC_NAME", "Me")   # the mic holder's name in the feed
 TOKEN = os.environ.get("NOTION_TOKEN")               # only used by the optional --page path
@@ -372,7 +392,7 @@ def q_score(window, qpath, lookback_s=3600):
 
 
 # --- P1 attribution: Wispr as a LOOKUP. NEVER a merge. mic = the mic holder, system = the room.
-WISPR_DIR = os.path.expanduser("~/Library/Application Support/Wispr Flow/meetings")
+WISPR_DIR = wispr_dir()
 _STOP = set("the a an and or but so like just really you i we it that this is are was were to of in on for with".split())
 def _toks(t): return {w for w in re.findall(r"[a-z']+", t.lower()) if w not in _STOP and len(w) > 2}
 _WIDX = None

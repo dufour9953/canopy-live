@@ -6,7 +6,9 @@ Nothing here is secret. These are the dials. One home per fact.
 
 ```
 CANOPY_MIC_NAME    the name the mic holder appears as in the feed. Default "Me".
-                   Set it to your own name:  CANOPY_MIC_NAME="Alex" ./run.sh
+                   Set it to your own name:  CANOPY_MIC_NAME="Alex" python3 canopy_run.py
+CANOPY_WISPR_DIR   the folder that holds Wispr's meeting subfolders. Overrides the per-OS
+                   default below. On Windows you will likely need to set this (see Paths).
 NOTION_TOKEN       only used by the optional --page path in jev-compile.py, which is not part
                    of the live loop. Leave unset for normal use.
 ```
@@ -14,12 +16,31 @@ NOTION_TOKEN       only used by the optional --page path in jev-compile.py, whic
 ## Paths
 
 ```
-Wispr transcripts  ~/Library/Application Support/Wispr Flow/meetings/<id>/live.ndjson
-                   Discovered automatically (newest by mtime). macOS Wispr Flow default.
+Wispr transcripts  <wispr-dir>/<meeting-id>/live.ndjson, discovered automatically (newest by
+                   mtime). <wispr-dir> is CANOPY_WISPR_DIR if set, else the per-OS default:
+                     macOS    ~/Library/Application Support/Wispr Flow/meetings   (confirmed)
+                     Windows  %APPDATA%\Wispr Flow\meetings                        (UNCONFIRMED)
+                     Linux    ~/.config/Wispr Flow/meetings                        (best guess)
 the program        wherever you installed this kit (default ~/canopy-live/program/).
-                   run.sh and tick.sh locate themselves and their siblings; no path to set.
+                   The scripts locate themselves and their siblings; no path to set.
 the bins           written into the program folder as *.ndjson. Gitignored.
 ```
+
+### Finding the Windows transcript folder
+
+Wispr's Windows build may store transcripts differently (its docs describe cloud storage and
+do not document a local live file). Confirm the file exists before relying on canopy-live.
+Start a meeting, then in PowerShell:
+
+```
+Get-ChildItem $env:APPDATA\'Wispr Flow' -Recurse -File |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 10 FullName,Length,LastWriteTime
+```
+
+Run it twice ~10s apart and watch for a `live.ndjson` whose `Length` grows while you talk. Set
+`CANOPY_WISPR_DIR` to the folder that CONTAINS the meeting subfolders. If no growing local file
+exists, canopy-live's local, zero-token design does not apply to that Wispr build yet.
 
 ## Cadence
 
