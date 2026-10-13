@@ -96,4 +96,4 @@ line to `feedback.md` each time a catch is wrong.
 
 ## License
 
-MIT. Set your name in [`LICENSE`](LICENSE) (it ships with a `<COPYRIGHT HOLDER>` placeholder).
+MIT, (c) 2026 Chandler Dufour. See [`LICENSE`](LICENSE).
