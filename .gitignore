@@ -1,0 +1,14 @@
+# Runtime data - NEVER commit. These hold verbatim transcript content.
+program/*.ndjson
+program/feed.log
+program/*.log
+program/roster.txt
+program/.live-state.json
+program/.live-state.json.*
+program/skipped.ndjson
+
+# backups / scratch
+*.bak
+.DS_Store
+__pycache__/
+*.pyc
